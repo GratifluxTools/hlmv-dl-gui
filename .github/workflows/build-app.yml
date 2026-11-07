@@ -1,0 +1,53 @@
+name: Build app
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 最新の hlmv-dl を取得して exe 化（同梱用）
+        shell: pwsh
+        run: |
+          python -m venv tool-venv
+          tool-venv\Scripts\python -m pip install --upgrade pip
+          tool-venv\Scripts\python -m pip install "git+https://github.com/tsukumijima/hlmv-dl.git" pyinstaller
+          tool-venv\Scripts\python scripts\build_tool.py
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: 更新先リポジトリを書き出す
+        shell: pwsh
+        run: Set-Content -Path repo_config.py -Value 'UPDATE_REPO = "${{ github.repository }}"' -Encoding utf8
+
+      - name: GUI をビルド（tools_out を同梱）
+        shell: pwsh
+        run: |
+          python -m pip install -r requirements.txt pyinstaller
+          python -m PyInstaller --noconfirm --onefile --windowed --name hlmv-dl `
+            --hidden-import repo_config `
+            --add-data "tools_out\hlmv-dl.exe;tools" `
+            --add-data "tools_out\hlmv-dl.json;tools" `
+            app.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hlmv-dl
+          path: dist/hlmv-dl.exe
+
+      - name: リリースに添付（タグ push 時）
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/hlmv-dl.exe

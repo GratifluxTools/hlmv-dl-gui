@@ -1,0 +1,51 @@
+# hlmv-dl ツールを手動でビルドし、GUI の「ツールの更新」用に公開する。
+# 定期実行はしない。hlmv-dl に更新があったときに Actions タブから手動実行する。
+name: Publish hlmv-dl tool
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 前回公開された hlmv-dl.json を取得
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download tool-latest --pattern hlmv-dl.json --dir prev --clobber 2>$null
+          if (-not (Test-Path prev\hlmv-dl.json)) { Write-Host "前回の公開物はありません" }
+
+      - name: hlmv-dl をビルド（commit が同じならスキップ）
+        shell: pwsh
+        run: |
+          python -m venv tool-venv
+          tool-venv\Scripts\python -m pip install --upgrade pip
+          tool-venv\Scripts\python -m pip install "git+https://github.com/tsukumijima/hlmv-dl.git" pyinstaller
+          $extra = @()
+          if (Test-Path prev\hlmv-dl.json) { $extra = @("--previous", "prev\hlmv-dl.json") }
+          tool-venv\Scripts\python scripts\build_tool.py @extra
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: 公開（ビルドされた場合のみ）
+        if: hashFiles('tools_out/hlmv-dl.exe') != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view tool-latest *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create tool-latest --title "hlmv-dl ツール配布" `
+              --notes "hlmv-dl の自動ビルド版。GUI アプリの「ツールの更新」が使用します。" --latest=false
+          }
+          gh release upload tool-latest tools_out\hlmv-dl.exe tools_out\hlmv-dl.json --clobber

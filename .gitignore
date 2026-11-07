@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+build/
+dist/
+build_tool/
+tools_out/
+tool-venv/
+prev/
+previous.json
+repo_config.py
+*.spec

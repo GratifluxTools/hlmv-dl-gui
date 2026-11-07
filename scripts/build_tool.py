@@ -22,6 +22,9 @@ WORK = Path("build_tool")
 
 
 def main() -> int:
+    # Windows の CI では標準出力が cp1252 になり日本語で落ちるため UTF-8 に固定する
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser()
     ap.add_argument("--previous", type=Path, help="前回公開された hlmv-dl.json")
     args = ap.parse_args()

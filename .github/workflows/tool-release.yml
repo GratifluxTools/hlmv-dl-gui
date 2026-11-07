@@ -4,6 +4,11 @@ name: Publish hlmv-dl tool
 
 on:
   workflow_dispatch:
+    inputs:
+      force:
+        description: "前回と同じ commit でも再ビルドして公開する"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -36,7 +41,9 @@ jobs:
           tool-venv\Scripts\python -m pip install --upgrade pip
           tool-venv\Scripts\python -m pip install "git+https://github.com/tsukumijima/hlmv-dl.git" pyinstaller
           $extra = @()
-          if (Test-Path prev\hlmv-dl.json) { $extra = @("--previous", "prev\hlmv-dl.json") }
+          if ("${{ inputs.force }}" -ne "true" -and (Test-Path prev\hlmv-dl.json)) {
+            $extra = @("--previous", "prev\hlmv-dl.json")
+          }
           tool-venv\Scripts\python scripts\build_tool.py @extra
           if ($LASTEXITCODE -ne 0) { exit 1 }
 

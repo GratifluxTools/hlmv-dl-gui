@@ -49,6 +49,16 @@ def main() -> int:
     entry = WORK / "hlmv_entry.py"
     entry.write_text(
         "import sys\n"
+        "# パイプ出力で日本語が cp1252 に落ちないよう UTF-8 に固定する\n"
+        "for _s in (sys.stdout, sys.stderr):\n"
+        "    if hasattr(_s, 'reconfigure'):\n"
+        "        _s.reconfigure(encoding='utf-8', errors='replace')\n"
+        "try:\n"
+        "    import rich.console as _rc\n"
+        "    if hasattr(_rc, 'detect_legacy_windows'):\n"
+        "        _rc.detect_legacy_windows = lambda: False  # 旧コンソール描画を使わせない\n"
+        "except ImportError:\n"
+        "    pass\n"
         f"from {module} import {func.strip()} as _main\n"
         "sys.exit(_main())\n",
         encoding="utf-8",

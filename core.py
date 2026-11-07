@@ -100,7 +100,8 @@ def check_update(log: Optional[LogFn] = None) -> dict:
         "where": cur.get("where"),
         "latest": meta["commit"],
         "built_at": meta.get("built_at", ""),
-        "available": installed != meta["commit"],
+        # 同じ commit でも exe を作り直していれば更新扱いにする
+        "available": cur.get("sha256") != meta.get("sha256"),
         "meta": meta,
         "exe_url": assets[EXE_NAME],
     }
@@ -143,6 +144,9 @@ def child_env() -> dict:
     env = os.environ.copy()
     env["PYTHONUTF8"] = "1"
     env["PYTHONIOENCODING"] = "utf-8"
+    env["NO_COLOR"] = "1"    # 色や装飾の制御文字を出さない
+    env["TERM"] = "dumb"     # 端末ではないことを明示する
+    env["COLUMNS"] = "1000"  # 表の折り返し・省略で行が壊れないようにする
     return env
 
 

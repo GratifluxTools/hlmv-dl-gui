@@ -43,6 +43,8 @@ scripts/build_tool.py          hlmv-dl を exe 化する（CI で実行）
 
 ## 更新の仕組み
 
+- 起動ラッパーや同梱ツールの不具合を直したときは、**Publish hlmv-dl tool** を `force` を有効にして実行してください。前回と同じ commit でも作り直して公開します。
+
 - hlmv-dl は毎日は自動ビルドしません。更新したいときに **Publish hlmv-dl tool** を手動で実行します。
 - 配布された最新版は GUI の「ツール → ツールの更新…」で取得・適用できます。
 - 更新版は `%LOCALAPPDATA%\hlmv-gui\tools\` に置かれ、同梱版より優先されます。
